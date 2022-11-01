@@ -15,16 +15,17 @@ router.post('/createuser', [
     
 
 ],async (req,res) => { 
+    let success = false;
     //If there are errors , Return bad request and the errors
     const errors = validationResult(req);
     if(!errors.isEmpty()){
-        return res.status(400).json({errors : errors.array()});
+        return res.status(400).json({success,errors : errors.array()});
     }
     //check whether the user with the same email exists already.
     try{
         let user = await User.findOne({email:req.body.email});
         if(user){
-            return res.status(400).json({error : 'Email already registered'});
+            return res.status(400).json({success,error : 'Email already registered'});
         }
         
         const salt = await bcrypt.genSalt(10);
@@ -42,7 +43,8 @@ router.post('/createuser', [
         }
         const authToken = jwt.sign(data,JWT_SECRET);
         console.log(authToken);
-        res.json({authToken});
+        success=true; 
+        res.json({success,authToken});
     }
     catch(err){
         console.error(err.message);
@@ -58,6 +60,7 @@ router.post('/login', [
     body('password','Password cannot be empty').exists(),    
 
 ],async (req,res) => {
+    let success = false;
     //If there are errors , Return bad request and the errors
     const errors = validationResult(req);
     if(!errors.isEmpty()){
@@ -68,11 +71,13 @@ router.post('/login', [
     try {
         let user = await User.findOne({email});
         if(!User){
-            return res.status(400).json({error:"Please try to login with correct credentials."});            
+            success = false;
+            return res.status(400).json({success,error:"Please try to login with correct credentials."});            
         }
         const passwordCompare = await bcrypt.compare(password,user.password);
         if(!passwordCompare){
-            return res.status(400).json({error:"Please try to login with correct credentials."});            
+            success = false;
+            return res.status(400).json({success,error:"Please try to login with correct credentials."});            
         }
         const data = {
             user:{
@@ -80,7 +85,8 @@ router.post('/login', [
             }
         }
         const authToken = jwt.sign(data,JWT_SECRET);
-        res.json({authToken});
+        success = true;
+        res.json({success,authToken});
         
     }  catch(err){
         console.error(err.message);
